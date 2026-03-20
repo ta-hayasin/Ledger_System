@@ -7,9 +7,112 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Post {
+model User {
+  id        Int           @id @default(autoincrement())
+  name      String
+  email     String        @unique
+  password  String
+  role      String        @default("accountant")
+  createdAt DateTime      @default(now())
+  companies UserCompany[]
+  vouchers  Voucher[]
+}
+
+model Company {
+  id                 Int           @id @default(autoincrement())
+  name               String
+  address            String?
+  phone              String?
+  email              String?
+  financialYearStart DateTime?
+  financialYearEnd   DateTime?
+  currency           String        @default("PKR")
+  taxNumber          String?
+  createdAt          DateTime      @default(now())
+  users              UserCompany[]
+  ledgers            Ledger[]
+  vouchers           Voucher[]
+}
+
+model UserCompany {
+  userId    Int
+  companyId Int
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  @@id([userId, companyId])
+}
+
+model AccountGroup {
   id        Int      @id @default(autoincrement())
-  title     String
-  content   String?
-  createdAt DateTime @default(now())
+  groupName String
+  groupType String
+  ledgers   Ledger[]
+}
+
+model Ledger {
+  id             Int            @id @default(autoincrement())
+  companyId      Int
+  groupId        Int
+  ledgerName     String
+  openingBalance Float          @default(0)
+  balanceType    String
+  createdAt      DateTime       @default(now())
+  company        Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  group          AccountGroup   @relation(fields: [groupId], references: [id])
+  entries        VoucherEntry[]
+  @@unique([companyId, ledgerName])
+}
+
+model StockGroup {
+  id        Int         @id @default(autoincrement())
+  groupName String
+  items     StockItem[]
+}
+
+model Unit {
+  id       Int         @id @default(autoincrement())
+  unitName String
+  items    StockItem[]
+}
+
+model StockItem {
+  id        Int        @id @default(autoincrement())
+  itemName  String
+  groupId   Int
+  unitId    Int
+  price     Float      @default(0)
+  quantity  Float      @default(0)
+  createdAt DateTime   @default(now())
+  group     StockGroup @relation(fields: [groupId], references: [id])
+  unit      Unit       @relation(fields: [unitId], references: [id])
+}
+
+model VoucherType {
+  id       Int       @id @default(autoincrement())
+  typeName String
+  vouchers Voucher[]
+}
+
+model Voucher {
+  id            Int            @id @default(autoincrement())
+  companyId     Int
+  voucherTypeId Int
+  voucherDate   DateTime
+  description   String?
+  createdById   Int?
+  createdAt     DateTime       @default(now())
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  voucherType   VoucherType    @relation(fields: [voucherTypeId], references: [id])
+  createdBy     User?          @relation(fields: [createdById], references: [id])
+  entries       VoucherEntry[]
+}
+
+model VoucherEntry {
+  id        Int     @id @default(autoincrement())
+  voucherId Int
+  ledgerId  Int
+  debit     Float   @default(0)
+  credit    Float   @default(0)
+  voucher   Voucher @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  ledger    Ledger  @relation(fields: [ledgerId], references: [id])
 }
