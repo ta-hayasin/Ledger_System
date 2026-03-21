@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
@@ -9,6 +9,17 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [closed, setClosed] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/check-users")
+      .then(r => r.json())
+      .then(data => {
+        setClosed(data.hasUsers);
+        setChecking(false);
+      });
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,12 +39,37 @@ export default function RegisterPage() {
     }
   }
 
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+        <p className="text-gray-400">Checking...</p>
+      </div>
+    );
+  }
+
+  if (closed) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
+        <div className="w-full max-w-md bg-gray-900 rounded-2xl p-8 shadow-xl border border-gray-800 text-center">
+          <div className="text-6xl mb-4">🔒</div>
+          <h1 className="text-2xl font-bold text-white mb-2">Registration Closed</h1>
+          <p className="text-gray-400 mb-6">
+            This system already has an administrator. New accounts can only be created by the admin.
+          </p>
+          <a href="/login" className="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition text-center">
+            Go to Login
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-gray-900 rounded-2xl p-8 shadow-xl border border-gray-800">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-white">Create Account</h1>
-          <p className="text-gray-400 mt-2">Get started with Ledger System</p>
+          <h1 className="text-3xl font-bold text-white">Create Admin Account</h1>
+          <p className="text-gray-400 mt-2">Set up your ledger system</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
@@ -75,14 +111,12 @@ export default function RegisterPage() {
             disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50"
           >
-            {loading ? "Creating account..." : "Create Account"}
+            {loading ? "Creating..." : "Create Admin Account"}
           </button>
         </form>
         <p className="text-center text-gray-500 text-sm mt-6">
           Already have an account?{" "}
-          <a href="/login" className="text-blue-400 hover:underline">
-            Sign in
-          </a>
+          <a href="/login" className="text-blue-400 hover:underline">Sign in</a>
         </p>
       </div>
     </div>

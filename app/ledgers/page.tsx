@@ -1,7 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRole } from "@/hooks/useRole";
 
 export default function LedgersPage() {
+  const { isAdmin } = useRole();
   const [ledgers, setLedgers] = useState<any[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
   const [company, setCompany] = useState<any>(null);
@@ -50,11 +52,8 @@ export default function LedgersPage() {
     if (!confirm("Are you sure you want to delete this ledger?")) return;
     const res = await fetch(`/api/ledgers/${id}`, { method: "DELETE" });
     const data = await res.json();
-    if (!res.ok) {
-      alert(data.error);
-    } else {
-      setLedgers(ledgers.filter(l => l.id !== id));
-    }
+    if (!res.ok) alert(data.error);
+    else setLedgers(ledgers.filter(l => l.id !== id));
   }
 
   const assetLedgers = ledgers.filter(l => l.group?.groupType === "Asset");
@@ -72,7 +71,7 @@ export default function LedgersPage() {
             <th className="text-left py-2">Name</th>
             <th className="text-left py-2">Group</th>
             <th className="text-right py-2">Opening Bal.</th>
-            <th className="text-right py-2">Action</th>
+            {isAdmin && <th className="text-right py-2">Action</th>}
           </tr>
         </thead>
         <tbody>
@@ -81,14 +80,16 @@ export default function LedgersPage() {
               <td className="py-2">{l.ledgerName}</td>
               <td className="py-2 text-gray-400">{l.group?.groupName}</td>
               <td className="py-2 text-right">{l.openingBalance} {l.balanceType}</td>
-              <td className="py-2 text-right">
-                <button
-                  onClick={() => handleDelete(l.id)}
-                  className="text-red-400 hover:text-red-300 text-xs px-2 py-1 border border-red-800 rounded hover:bg-red-900"
-                >
-                  Delete
-                </button>
-              </td>
+              {isAdmin && (
+                <td className="py-2 text-right">
+                  <button
+                    onClick={() => handleDelete(l.id)}
+                    className="text-red-400 hover:text-red-300 text-xs px-2 py-1 border border-red-800 rounded hover:bg-red-900"
+                  >
+                    Delete
+                  </button>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
@@ -105,15 +106,17 @@ export default function LedgersPage() {
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Chart of Accounts</h2>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm"
-          >
-            + Add Ledger
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm"
+            >
+              + Add Ledger
+            </button>
+          )}
         </div>
 
-        {showForm && (
+        {isAdmin && showForm && (
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6">
             <h3 className="text-lg font-semibold mb-4">New Ledger</h3>
             <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">

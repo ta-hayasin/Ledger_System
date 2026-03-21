@@ -155,6 +155,7 @@ export default function DashboardPage() {
             <h3 className="font-semibold text-lg">Balance Sheet</h3>
             <p className="text-gray-400 text-sm mt-1">Assets vs liabilities</p>
           </a>
+          <a href="/users" className="bg-gray-900 border border-gray-800 hover:border-red-500 rounded-xl p-6 transition"><h3 className="font-semibold text-lg">Users</h3><p className="text-gray-400 text-sm mt-1">Manage system users</p></a>
           <a href="/reports/ledger-statement" className="bg-gray-900 border border-gray-800 hover:border-pink-500 rounded-xl p-6 transition">
             <h3 className="font-semibold text-lg">Ledger Statement</h3>
             <p className="text-gray-400 text-sm mt-1">Individual ledger report</p>

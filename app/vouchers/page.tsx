@@ -1,7 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRole } from "@/hooks/useRole";
 
 export default function VouchersPage() {
+  const { isAccountant, isAdmin } = useRole();
+  const canEdit = isAccountant || isAdmin;
   const [vouchers, setVouchers] = useState<any[]>([]);
   const [filtered, setFiltered] = useState<any[]>([]);
   const [ledgers, setLedgers] = useState<any[]>([]);
@@ -114,15 +117,16 @@ export default function VouchersPage() {
               — Total: <span className="text-green-400 font-semibold">PKR {totalAmount.toLocaleString()}</span>
             </p>
           </div>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm"
-          >
-            + New Voucher
-          </button>
+          {canEdit && (
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm"
+            >
+              + New Voucher
+            </button>
+          )}
         </div>
 
-        {/* Search & Filter Bar */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
@@ -177,7 +181,7 @@ export default function VouchersPage() {
           </div>
         </div>
 
-        {showForm && (
+        {canEdit && showForm && (
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6">
             <h3 className="text-lg font-semibold mb-4">New Voucher</h3>
             <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
@@ -288,7 +292,7 @@ export default function VouchersPage() {
                 <th className="text-left px-4 py-3">Credit</th>
                 <th className="text-left px-4 py-3">Amount</th>
                 <th className="text-left px-4 py-3">Description</th>
-                <th className="text-left px-4 py-3">Action</th>
+                {canEdit && <th className="text-left px-4 py-3">Action</th>}
               </tr>
             </thead>
             <tbody>
@@ -310,14 +314,16 @@ export default function VouchersPage() {
                     <td className="px-4 py-3 text-red-400">{v.entries?.find((e: any) => e.credit > 0)?.ledger?.ledgerName}</td>
                     <td className="px-4 py-3 font-semibold">{v.entries?.find((e: any) => e.debit > 0)?.debit?.toLocaleString()}</td>
                     <td className="px-4 py-3 text-gray-400">{v.description || "-"}</td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => handleDelete(v.id)}
-                        className="text-red-400 hover:text-red-300 text-xs px-2 py-1 border border-red-800 rounded hover:bg-red-900"
-                      >
-                        Delete
-                      </button>
-                    </td>
+                    {canEdit && (
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => handleDelete(v.id)}
+                          className="text-red-400 hover:text-red-300 text-xs px-2 py-1 border border-red-800 rounded hover:bg-red-900"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
