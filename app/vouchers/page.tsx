@@ -3,12 +3,17 @@ import { useState, useEffect } from "react";
 
 export default function VouchersPage() {
   const [vouchers, setVouchers] = useState<any[]>([]);
+  const [filtered, setFiltered] = useState<any[]>([]);
   const [ledgers, setLedgers] = useState<any[]>([]);
   const [voucherTypes, setVoucherTypes] = useState<any[]>([]);
   const [company, setCompany] = useState<any>(null);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [filterType, setFilterType] = useState("");
+  const [filterFrom, setFilterFrom] = useState("");
+  const [filterTo, setFilterTo] = useState("");
   const [form, setForm] = useState({
     voucherTypeId: "",
     voucherDate: new Date().toISOString().split("T")[0],
@@ -22,8 +27,30 @@ export default function VouchersPage() {
     fetch("/api/company").then(r => r.json()).then(setCompany);
     fetch("/api/ledgers").then(r => r.json()).then(setLedgers);
     fetch("/api/voucher-types").then(r => r.json()).then(setVoucherTypes);
-    fetch("/api/vouchers").then(r => r.json()).then(setVouchers);
+    fetch("/api/vouchers").then(r => r.json()).then(v => { setVouchers(v); setFiltered(v); });
   }, []);
+
+  useEffect(() => {
+    let result = [...vouchers];
+    if (search) {
+      result = result.filter(v =>
+        v.description?.toLowerCase().includes(search.toLowerCase()) ||
+        v.voucherType?.typeName?.toLowerCase().includes(search.toLowerCase()) ||
+        v.entries?.some((e: any) => e.ledger?.ledgerName?.toLowerCase().includes(search.toLowerCase()))
+      );
+    }
+    if (filterType) result = result.filter(v => v.voucherType?.typeName === filterType);
+    if (filterFrom) result = result.filter(v => new Date(v.voucherDate) >= new Date(filterFrom));
+    if (filterTo) result = result.filter(v => new Date(v.voucherDate) <= new Date(filterTo));
+    setFiltered(result);
+  }, [search, filterType, filterFrom, filterTo, vouchers]);
+
+  function clearFilters() {
+    setSearch("");
+    setFilterType("");
+    setFilterFrom("");
+    setFilterTo("");
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -67,6 +94,11 @@ export default function VouchersPage() {
     else alert("Cannot delete this voucher.");
   }
 
+  const totalAmount = filtered.reduce((sum, v) => {
+    const debitEntry = v.entries?.find((e: any) => e.debit > 0);
+    return sum + (debitEntry?.debit || 0);
+  }, 0);
+
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <nav className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex justify-between items-center">
@@ -75,13 +107,74 @@ export default function VouchersPage() {
       </nav>
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Voucher Entry</h2>
+          <div>
+            <h2 className="text-2xl font-bold">Voucher Entry</h2>
+            <p className="text-gray-400 text-sm mt-1">
+              Showing <span className="text-white font-semibold">{filtered.length}</span> of {vouchers.length} vouchers
+              — Total: <span className="text-green-400 font-semibold">PKR {totalAmount.toLocaleString()}</span>
+            </p>
+          </div>
           <button
             onClick={() => setShowForm(!showForm)}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm"
           >
             + New Voucher
           </button>
+        </div>
+
+        {/* Search & Filter Bar */}
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Search</label>
+              <input
+                type="text"
+                placeholder="Description, type, ledger..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Voucher Type</label>
+              <select
+                value={filterType}
+                onChange={e => setFilterType(e.target.value)}
+                className="w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 text-sm"
+              >
+                <option value="">All Types</option>
+                {voucherTypes.map(t => (
+                  <option key={t.id} value={t.typeName}>{t.typeName}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">From Date</label>
+              <input
+                type="date"
+                value={filterFrom}
+                onChange={e => setFilterFrom(e.target.value)}
+                className="w-full bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">To Date</label>
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={filterTo}
+                  onChange={e => setFilterTo(e.target.value)}
+                  className="flex-1 bg-gray-800 text-white border border-gray-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 text-sm"
+                />
+                <button
+                  onClick={clearFilters}
+                  className="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {showForm && (
@@ -199,12 +292,12 @@ export default function VouchersPage() {
               </tr>
             </thead>
             <tbody>
-              {vouchers.length === 0 ? (
+              {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center text-gray-500 py-8">No vouchers yet</td>
+                  <td colSpan={8} className="text-center text-gray-500 py-8">No vouchers found</td>
                 </tr>
               ) : (
-                vouchers.map((v, i) => (
+                filtered.map((v, i) => (
                   <tr key={v.id} className="border-b border-gray-800 hover:bg-gray-800">
                     <td className="px-4 py-3">{i + 1}</td>
                     <td className="px-4 py-3">{new Date(v.voucherDate).toLocaleDateString()}</td>

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import * as XLSX from "xlsx";
 
 export default function TrialBalancePage() {
   const [data, setData] = useState<any[]>([]);
@@ -14,15 +15,61 @@ export default function TrialBalancePage() {
   const totalDebit = data.reduce((sum, r) => sum + r.totalDebit, 0);
   const totalCredit = data.reduce((sum, r) => sum + r.totalCredit, 0);
 
+  function exportToExcel() {
+    const rows = data.map(r => ({
+      "Ledger Name": r.ledgerName,
+      "Debit (PKR)": r.totalDebit > 0 ? r.totalDebit : 0,
+      "Credit (PKR)": r.totalCredit > 0 ? r.totalCredit : 0,
+    }));
+    rows.push({ "Ledger Name": "TOTAL", "Debit (PKR)": totalDebit, "Credit (PKR)": totalCredit });
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws["!cols"] = [{ wch: 30 }, { wch: 15 }, { wch: 15 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Trial Balance");
+    XLSX.writeFile(wb, "trial_balance.xlsx");
+  }
+
+  function printReport() {
+    window.print();
+  }
+
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      <nav className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex justify-between items-center">
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          body { background: white !important; color: black !important; }
+          .print-area { background: white !important; color: black !important; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #ccc; padding: 8px; color: black !important; }
+          th { background: #f0f0f0 !important; }
+        }
+      `}</style>
+      <nav className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex justify-between items-center no-print">
         <h1 className="text-xl font-bold text-blue-400">Ledger System</h1>
         <a href="/dashboard" className="text-gray-400 hover:text-white text-sm">Back to Dashboard</a>
       </nav>
-      <div className="p-6 max-w-4xl mx-auto">
-        <h2 className="text-2xl font-bold mb-2">Trial Balance</h2>
-        <p className="text-gray-400 text-sm mb-6">Summary of all debit and credit balances</p>
+      <div className="p-6 max-w-4xl mx-auto print-area">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-2xl font-bold">Trial Balance</h2>
+            <p className="text-gray-400 text-sm mt-1">Summary of all debit and credit balances</p>
+          </div>
+          <div className="flex gap-3 no-print">
+            <button
+              onClick={exportToExcel}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm"
+            >
+              Export Excel
+            </button>
+            <button
+              onClick={printReport}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm"
+            >
+              Print / PDF
+            </button>
+          </div>
+        </div>
 
         {loading ? (
           <p className="text-gray-400">Loading...</p>
