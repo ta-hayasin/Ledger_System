@@ -1,3 +1,9 @@
 import { defineConfig } from "prisma/config";
+import * as dotenv from "dotenv";
 
-export default defineConfig({});
+dotenv.config();
+
+export default defineConfig({
+  earlyAccess: true,
+  schema: "prisma/schema.prisma",
+});
